@@ -1,5 +1,5 @@
-using System.Text;
-using Cysharp.Threading.Tasks;
+using System.Collections;
+using System.Collections.Generic;
 using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
@@ -8,40 +8,13 @@ namespace Http
 {
     public static class RequestExtensionGet
     {
-        internal static void AddCachePreventer(StringBuilder sb)
+        public static IEnumerator Get<TRecv>(
+            this Request<TRecv> request,
+            string Url,
+            string Data = null,
+            int Timeout = 10) where TRecv : class
         {
-            sb.Append("t");
-            sb.Append(Time.realtimeSinceStartup);
-            sb.Append("=0");
-        }
-
-        public static async UniTask<TRecv> AsyncGet<TRecv>(this Request request, string Url, string Data = null, int Timeout = 10) where TRecv : class
-        {
-            var urlSb = request.StringBuilder;
-            urlSb.Append(Url);
-
-            if (Url.IndexOf('?') == -1)
-            {
-                urlSb.Append("?");
-                if (!string.IsNullOrEmpty(Data))
-                {
-                    urlSb.Append(Data);
-                    urlSb.Append("&");
-                }
-            }
-            else
-            {
-                urlSb.Append("&");
-                if (!string.IsNullOrEmpty(Data))
-                {
-                    urlSb.Append(Data);
-                    urlSb.Append("&");
-                }
-            }
-
-            AddCachePreventer(urlSb);
-
-            var tmpUrl = urlSb.ToString();
+            var tmpUrl = UrlUtil.GetUrl(Url, Data);
 
             UnityWebRequest getRequest = null;
             if (typeof(TRecv) == typeof(Texture2D))
@@ -64,15 +37,7 @@ namespace Http
             getRequest.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             getRequest.timeout = Timeout;
 
-            // Request and wait for the desired page.
-            try
-            {
-                await getRequest.SendWebRequest().ToUniTask();
-            }
-            catch (System.Exception)
-            {
-                // Log.E("Request.AsyncGet:", Url, "Data:", Data + "Failed:", e);
-            }
+            yield return getRequest.SendWebRequest();
 
             TRecv result = null;
             switch (getRequest.result)
@@ -80,7 +45,8 @@ namespace Http
                 case UnityWebRequest.Result.ConnectionError:
                 case UnityWebRequest.Result.DataProcessingError:
                 case UnityWebRequest.Result.ProtocolError:
-                    Log.E(getRequest.error);
+                    request.Error = getRequest.error;
+                    Log.D("Request.RoutineGet: " + tmpUrl + " Failed: " + getRequest.error);
                     break;
                 case UnityWebRequest.Result.Success:
                     Log.D("Request.RoutineGet: " + tmpUrl + " Success: " + getRequest.downloadHandler.text);
@@ -94,7 +60,7 @@ namespace Http
                         var assetBundle = DownloadHandlerAssetBundle.GetContent(getRequest);
                         result = assetBundle as TRecv;
                     }
-                    else if (typeof(TRecv) == typeof(Texture2D))
+                    else if (typeof(TRecv) == typeof(AudioClip))
                     {
                         var audioClip = DownloadHandlerAudioClip.GetContent(getRequest);
                         result = audioClip as TRecv;
@@ -106,21 +72,32 @@ namespace Http
                     }
                     else
                     {
-                        var data = getRequest.downloadHandler.data;
-                        result = data as TRecv;
+                        result = JsonConvert.DeserializeObject<TRecv>(getRequest.downloadHandler.text);
                     }
                     break;
                 default:
                     break;
             }
             getRequest.Dispose();
-            return result;
+            request.Result = result;
         }
 
-        public static async UniTask<TRecv> AsyncGet<TRecv>(this Request request, string Url, object Data, int Timeout = 10) where TRecv : class
+        public static IEnumerator GetWithForm(
+            this Request<Dictionary<string, object>> request,
+            string Url,
+            Dictionary<string, object> Data,
+            int Timeout = 10)
         {
-            var data = JsonConvert.SerializeObject(Data);
-            return await AsyncGet<TRecv>(request, Url, data, Timeout);
+            yield return Get(request, Url, UrlUtil.DictionaryToFormStr(Data), Timeout);
+        }
+
+        public static IEnumerator GetWithForm<TSend, TRecv>(
+            this Request<TRecv> request,
+            string Url,
+            TSend Data,
+            int Timeout = 10) where TSend : class where TRecv : class
+        {
+            yield return Get(request, Url, UrlUtil.StructValuesToFormStr(Data), Timeout);
         }
     }
 }

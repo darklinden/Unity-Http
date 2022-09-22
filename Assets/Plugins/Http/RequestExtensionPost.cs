@@ -1,7 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine.Networking;
-using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace Http
@@ -19,8 +19,17 @@ namespace Http
             return tmp;
         }
 
-        public static async UniTask<TRecv> AsyncPost<TSend, TRecv>(this Request request, string Url, TSend Data, int Timeout = 10) where TSend : class where TRecv : class
+        public static IEnumerator Post<TSend, TRecv>(
+            this Request<TRecv> request,
+            string Url,
+            TSend Data,
+            int Timeout = 10) where TRecv : class
         {
+            if (!Url.StartsWith("http://") && !Url.StartsWith("https://"))
+            {
+                Url = "http://" + Url;
+            }
+
             var postRequest = new UnityWebRequest(Url, UnityWebRequest.kHttpVerbPOST)
             {
                 downloadHandler = new DownloadHandlerBuffer()
@@ -46,19 +55,12 @@ namespace Http
             postRequest.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
             postRequest.timeout = Timeout;
 
-            try
-            {
-                await postRequest.SendWebRequest().ToUniTask();
-            }
-            catch (System.Exception)
-            {
-                // Log.E("Request.AsyncPost:", Url, "Data:", Data + "Failed:", postRequest.error);
-            }
+            yield return postRequest.SendWebRequest();
 
-            TRecv result = null;
             if (postRequest.result == UnityWebRequest.Result.ConnectionError
                 || postRequest.result == UnityWebRequest.Result.ProtocolError)
             {
+                request.Error = postRequest.error;
                 Log.E("Request.AsyncPost:", Url, "Data:", Data + "Failed:", postRequest.error);
             }
             else if (postRequest.isDone)
@@ -67,66 +69,36 @@ namespace Http
 
                 if (typeof(TRecv) == typeof(string))
                 {
-                    result = postRequest.downloadHandler.text as TRecv;
+                    request.Result = postRequest.downloadHandler.text as TRecv;
                 }
                 else if (typeof(TRecv) == typeof(byte[]))
                 {
-                    result = postRequest.downloadHandler.data as TRecv;
+                    request.Result = postRequest.downloadHandler.data as TRecv;
                 }
                 else
                 {
-                    var obj = Newtonsoft.Json.JsonConvert.DeserializeObject<TRecv>(postRequest.downloadHandler.text);
-                    result = obj as TRecv;
+                    request.Result = JsonConvert.DeserializeObject<TRecv>(postRequest.downloadHandler.text);
                 }
             }
             postRequest.Dispose();
-            return result;
         }
 
-        private static string DictionaryToFormStr(Dictionary<string, object> dict)
+        public static IEnumerator PostWithForm(
+            this Request<Dictionary<string, object>> request,
+            string Url,
+            Dictionary<string, object> Data,
+            int Timeout = 10)
         {
-            var sb = new StringBuilder();
-            foreach (var item in dict)
-            {
-                sb.Append(item.Key);
-                sb.Append("=");
-                sb.Append(item.Value);
-                sb.Append("&");
-            }
-            return sb.ToString();
+            yield return Post(request, Url, UrlUtil.DictionaryToFormStr(Data), Timeout);
         }
 
-        public static async UniTask<Dictionary<string, object>> AsyncPostForm(this Request request, string Url, Dictionary<string, object> Data, int Timeout = 10)
+        public static IEnumerator PostWithForm<TSend, TRecv>(
+            this Request<TRecv> request,
+            string Url,
+            TSend Data,
+            int Timeout = 10) where TRecv : class
         {
-            var result = await AsyncPost<string, string>(request, Url, DictionaryToFormStr(Data), Timeout);
-            return JsonConvert.DeserializeObject<Dictionary<string, object>>(result);
-        }
-
-        private static string StructValuesToFormStr(object obj)
-        {
-            var sb = new StringBuilder();
-            var type = obj.GetType();
-            var fields = type.GetFields();
-            foreach (var field in fields)
-            {
-                var value = field.GetValue(obj);
-                if (value == null)
-                {
-                    continue;
-                }
-                sb.Append(field.Name);
-                sb.Append("=");
-                sb.Append(value);
-                sb.Append("&");
-            }
-            return sb.ToString();
-        }
-
-        public static async UniTask<TRecv> AsyncPostForm<TSend, TRecv>(this Request request, string Url, TSend Data, int Timeout = 10) where TSend : struct where TRecv : struct
-        {
-            var postData = StructValuesToFormStr(Data);
-            var result = await AsyncPost<string, string>(request, Url, postData, Timeout);
-            return JsonConvert.DeserializeObject<TRecv>(result);
+            yield return Post(request, Url, UrlUtil.StructValuesToFormStr(Data), Timeout);
         }
     }
 }

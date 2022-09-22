@@ -1,59 +1,63 @@
 using UnityEngine;
-using Cysharp.Threading.Tasks;
 using Http;
 using Newtonsoft.Json;
+using System.Collections;
+
+class LoginSendData
+{
+    public string channel;
+    public string account;
+    public string password;
+}
+
+class LoginRecvUserData
+{
+    public string id;
+    public string account;
+    public string sign;
+    public string timestamp;
+}
+
+class LoginRecvData
+{
+    public int code;
+    public LoginRecvUserData data;
+}
 
 public class HttpTest : MonoBehaviour
 {
     private void Start()
     {
-        Test();
+        StartCoroutine(Test());
     }
 
-    struct LoginSendData
+    IEnumerator Test()
     {
-        public string channel;
-        public string account;
-        public string password;
-    }
+        var request = Request<string>.Make();
 
-    struct LoginRecvUserData
-    {
-        public string id;
-        public string account;
-        public string sign;
-        public string timestamp;
-    }
-
-    struct LoginRecvData
-    {
-        public int code;
-        public LoginRecvUserData data;
-    }
-
-    async void Test()
-    {
-        // {
-        //     // Test Get
-        //     var result = await Request.Instance.AsyncGet<string>("http://127.0.0.1:8080/info.txt");
-        //     Log.D(result);
-        // }
-
-        // {
-        //     // Test Post
-        //     var result = await Request.Instance.AsyncPost<string, string>("http://127.0.0.1:8080", "hello");
-        //     Log.D(result);
-        // }
+        {
+            // Test Get
+            yield return request.Get("http://www.baidu.com");
+            Log.D(request.Result);
+        }
 
         {
             // Test Post
-            var result = await Request.Instance.AsyncPostForm<LoginSendData, LoginRecvData>("http://192.168.1.180:7001/login", new LoginSendData
+            yield return request.Post("http://www.baidu.com", "Hello World");
+            Log.D(request.Result);
+        }
+
+        {
+            // Test Post
+            var loginRequest = Request<LoginRecvData>.Make();
+            yield return loginRequest.PostWithForm("http://192.168.1.180:7001/login", new LoginSendData
             {
                 channel = "test",
                 account = "123456",
                 password = "123456",
             });
-            Log.D(JsonConvert.SerializeObject(result));
+
+            Log.D(JsonConvert.SerializeObject(loginRequest.Result));
         }
     }
 }
