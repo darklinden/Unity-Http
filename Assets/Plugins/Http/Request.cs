@@ -28,8 +28,6 @@ namespace Http
             }
         }
 
-        internal int DefaultTimeout = 10;
-
         private readonly Dictionary<string, GameObject> _senders;
         private Request()
         {
@@ -50,13 +48,6 @@ namespace Http
             }
         }
 
-        internal void AddCachePreventer()
-        {
-            StringBuilder.Append("t");
-            StringBuilder.Append(Time.realtimeSinceStartup);
-            StringBuilder.Append("=0");
-        }
-
         internal string NormalizeUrl(string url)
         {
             if (url.StartsWith("http://") || url.StartsWith("https://"))
@@ -65,43 +56,6 @@ namespace Http
             }
             return "http://" + url;
         }
-
-        // private string AttachSender<TSend, TRecv>(
-        //     string url,
-        //     TSend data,
-        //     HttpMethod method,
-        //     int timeout,
-        //     Action<TRecv, string> completion) where TSend : class where TRecv : class
-        // {
-        //     var guid = Guid.NewGuid().ToString();
-
-        //     var go = new GameObject(string.Concat("Sender(", method, ")", guid));
-        //     UnityEngine.Object.DontDestroyOnLoad(go);
-
-        //     var sender = go.AddComponent<Sender<TSend, TRecv>>();
-        //     sender.Guid = guid;
-
-
-
-        //     sender.Data = data;
-        //     sender.Method = method;
-        //     sender.Completion = completion;
-
-        //     _senders[guid] = go;
-        //     switch (sender.Method)
-        //     {
-        //         case HttpMethod.Get:
-        //             sender.StartCoroutine(RoutineGet(sender));
-        //             break;
-        //         case HttpMethod.Post:
-        //             sender.StartCoroutine(RoutinePost(sender));
-        //             break;
-        //         default:
-        //             throw new ArgumentOutOfRangeException();
-        //     }
-
-        //     return guid;
-        // }
 
         public static void Clear(string guid)
         {

@@ -1,3 +1,4 @@
+using System.Text;
 using Cysharp.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
@@ -7,6 +8,13 @@ namespace Http
 {
     public static class RequestExtensionGet
     {
+        internal static void AddCachePreventer(StringBuilder sb)
+        {
+            sb.Append("t");
+            sb.Append(Time.realtimeSinceStartup);
+            sb.Append("=0");
+        }
+
         public static async UniTask<TRecv> AsyncGet<TRecv>(this Request request, string Url, string Data = null, int Timeout = 10) where TRecv : class
         {
             var urlSb = request.StringBuilder;
@@ -30,7 +38,8 @@ namespace Http
                     urlSb.Append("&");
                 }
             }
-            request.AddCachePreventer();
+
+            AddCachePreventer(urlSb);
 
             var tmpUrl = urlSb.ToString();
 
@@ -39,24 +48,31 @@ namespace Http
             {
                 getRequest = UnityWebRequestTexture.GetTexture(tmpUrl);
             }
-            // else if (typeof(TRecv) == typeof(Texture2D))
-            // {
-            //     getRequest = UnityWebRequestAssetBundle.GetAssetBundle(tmpUrl);
-            // }
-            // else if (typeof(TRecv) == typeof(Texture2D))
-            // {
-            //     getRequest = UnityWebRequestMultimedia.GetAudioClip(tmpUrl);
-            // }
+            else if (typeof(TRecv) == typeof(AssetBundle))
+            {
+                getRequest = UnityWebRequestAssetBundle.GetAssetBundle(tmpUrl);
+            }
+            else if (typeof(TRecv) == typeof(AudioClip))
+            {
+                getRequest = UnityWebRequestMultimedia.GetAudioClip(tmpUrl, AudioType.MPEG);
+            }
             else
             {
                 getRequest = UnityWebRequest.Get(tmpUrl);
             }
 
             getRequest.SetRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            getRequest.timeout = request.DefaultTimeout;
+            getRequest.timeout = Timeout;
 
             // Request and wait for the desired page.
-            await getRequest.SendWebRequest();
+            try
+            {
+                await getRequest.SendWebRequest().ToUniTask();
+            }
+            catch (System.Exception e)
+            {
+                // Log.E("Request.AsyncGet:", Url, "Data:", Data + "Failed:", e);
+            }
 
             TRecv result = null;
             switch (getRequest.result)
@@ -98,14 +114,13 @@ namespace Http
                     break;
             }
             getRequest.Dispose();
-
             return result;
         }
 
         public static async UniTask<TRecv> AsyncGet<TRecv>(this Request request, string Url, object Data, int Timeout = 10) where TRecv : class
         {
             var data = JsonConvert.SerializeObject(Data);
-            return await request.AsyncGet<TRecv>(Url, data, Timeout);
+            return await AsyncGet<TRecv>(request, Url, data, Timeout);
         }
     }
 }
