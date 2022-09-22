@@ -69,7 +69,7 @@ namespace Http
             {
                 await getRequest.SendWebRequest().ToUniTask();
             }
-            catch (System.Exception e)
+            catch (System.Exception)
             {
                 // Log.E("Request.AsyncGet:", Url, "Data:", Data + "Failed:", e);
             }
