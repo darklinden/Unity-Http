@@ -1,6 +1,5 @@
 using System.Text;
 using Cysharp.Threading.Tasks;
-using Newtonsoft.Json;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -119,7 +118,7 @@ namespace Http
 
         public static async UniTask<TRecv> AsyncGet<TRecv>(this Request request, string Url, object Data, int Timeout = 10) where TRecv : class
         {
-            var data = JsonConvert.SerializeObject(Data);
+            var data = Utils.StructValuesToFormStr(Data);
             return await AsyncGet<TRecv>(request, Url, data, Timeout);
         }
     }

@@ -1,52 +1,29 @@
-﻿#define FORCE_ENABLE_LOG
-#define LOG_TO_FILE
-#define LOG_TO_CONSOLE
-
-#if !FORCE_ENABLE_LOG
-#define CONDITIONAL_CLOSE_LOG
-#endif
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Text;
-using UnityEngine;
-using System.IO;
+using UnityEngine.Profiling;
 
 public static class Log
 {
-    private static bool IsLogEnable
+    static Log()
     {
-        get
-        {
-#if FORCE_ENABLE_LOG
-            return true;
-#else
+        LogStringBuilder = new StringBuilder();
+    }
 
-#if (UNITY_IOS || UNITY_ANDROID || UNITY_WEBGL) && !UNITY_EDITOR && !DEBUG
-            return false;
-#endif
-            return true;
-#endif
+    public static event Action<string> OnLog;
+    public static StringBuilder LogStringBuilder { get; set; }
+    private static void L2S(string message)
+    {
+        LogStringBuilder.AppendLine(message);
+        if (OnLog != null)
+        {
+            OnLog(message);
         }
     }
 
-    private static string LogFilePath { get; set; }
-    public static void WriterToFile(string message)
-    {
-        if (LogFilePath == null)
-        {
-            LogFilePath = Path.Combine(Application.persistentDataPath, "log-" + DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss") + ".log");
-            File.Create(LogFilePath).Close();
-            UnityEngine.Debug.Log("[Not Error]: Log Is Written To File " + LogFilePath);
-        }
-
-        using (StreamWriter writer = new StreamWriter(LogFilePath, true))
-            writer.WriteLine(message);
-    }
-
-    public static void DToFile(string message) { WriterToFile("[L]" + message); }
-    public static void WToFile(string message) { WriterToFile("[W]" + message); }
-    public static void EToFile(string message) { WriterToFile("[E]" + message); }
+    public static void D2S(string message) { L2S("[L]" + message); }
+    public static void W2S(string message) { L2S("[W]" + message); }
+    public static void E2S(string message) { L2S("[E]" + message); }
 
     private static string NowTimeStr()
     {
@@ -87,12 +64,10 @@ public static class Log
     }
 
     private static string ObjectsToString(object message0, object message1 = null, object message2 = null, object message3 = null,
-        object message4 = null, object message5 = null, object message6 = null, object message7 = null,
-        object message8 = null, object message9 = null, object message10 = null, object message11 = null,
-        object message12 = null, object message13 = null, object message14 = null, object message15 = null)
+            object message4 = null, object message5 = null, object message6 = null, object message7 = null,
+            object message8 = null, object message9 = null, object message10 = null, object message11 = null,
+            object message12 = null, object message13 = null, object message14 = null, object message15 = null)
     {
-        if (!IsLogEnable) return "";
-
         StringBuilder result = new StringBuilder();
         result.Append(NowTimeStr());
         if (message0 != null)
@@ -178,74 +153,65 @@ public static class Log
         return result.ToString();
     }
 
-#if CONDITIONAL_CLOSE_LOG
-    [Conditional("DEBUG")]
+#if !ENABLE_LOG
+    [Conditional("FORCE_ENABLE_LOG")]
 #endif
     public static void D(object message0, object message1 = null, object message2 = null, object message3 = null,
             object message4 = null, object message5 = null, object message6 = null, object message7 = null,
             object message8 = null, object message9 = null, object message10 = null, object message11 = null,
             object message12 = null, object message13 = null, object message14 = null, object message15 = null)
     {
-        if (!IsLogEnable) return;
-
+        Profiler.BeginSample("Log.D");
         var result = ObjectsToString(message0, message1, message2, message3,
                  message4, message5, message6, message7,
                  message8, message9, message10, message11,
                  message12, message13, message14, message15);
 
-#if LOG_TO_FILE
-        DToFile(result);
-#endif
-
-#if LOG_TO_CONSOLE
+        D2S(result);
         UnityEngine.Debug.Log(result);
-#endif
+
+        Profiler.EndSample();
     }
 
-#if CONDITIONAL_CLOSE_LOG
-    [Conditional("DEBUG")]
+#if !ENABLE_LOG
+    [Conditional("FORCE_ENABLE_LOG")]
 #endif
     public static void W(object message0, object message1 = null, object message2 = null,
-            object message3 = null,
-            object message4 = null, object message5 = null, object message6 = null, object message7 = null,
-            object message8 = null, object message9 = null, object message10 = null, object message11 = null,
-            object message12 = null, object message13 = null, object message14 = null, object message15 = null)
+        object message3 = null,
+        object message4 = null, object message5 = null, object message6 = null, object message7 = null,
+        object message8 = null, object message9 = null, object message10 = null, object message11 = null,
+        object message12 = null, object message13 = null, object message14 = null, object message15 = null)
     {
-        if (!IsLogEnable) return;
-
+        Profiler.BeginSample("Log.W");
         var result = ObjectsToString(message0, message1, message2, message3,
                  message4, message5, message6, message7,
                  message8, message9, message10, message11,
                  message12, message13, message14, message15);
 
-#if LOG_TO_FILE
-        WToFile(result);
-#endif
-
-#if LOG_TO_CONSOLE
+        W2S(result);
         UnityEngine.Debug.LogWarning(result);
-#endif
+
+        Profiler.EndSample();
     }
 
-#if CONDITIONAL_CLOSE_LOG
-    [Conditional("DEBUG")]
+#if !ENABLE_LOG
+    [Conditional("FORCE_ENABLE_LOG")]
 #endif
     public static void E(object message0, object message1 = null, object message2 = null, object message3 = null,
-            object message4 = null, object message5 = null, object message6 = null, object message7 = null,
-            object message8 = null, object message9 = null, object message10 = null, object message11 = null,
-            object message12 = null, object message13 = null, object message14 = null, object message15 = null)
+        object message4 = null, object message5 = null, object message6 = null, object message7 = null,
+        object message8 = null, object message9 = null, object message10 = null, object message11 = null,
+        object message12 = null, object message13 = null, object message14 = null, object message15 = null)
     {
-        if (!IsLogEnable) return;
+        Profiler.BeginSample("Log.E");
 
         var result = ObjectsToString(message0, message1, message2, message3,
                          message4, message5, message6, message7,
                          message8, message9, message10, message11,
                          message12, message13, message14, message15);
 
-#if LOG_TO_FILE
-        EToFile(result);
-#endif
-
+        E2S(result);
         UnityEngine.Debug.LogError(result);
+
+        Profiler.EndSample();
     }
 }

@@ -1,7 +1,7 @@
+using System;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Http;
-using Newtonsoft.Json;
 
 public class HttpTest : MonoBehaviour
 {
@@ -10,7 +10,7 @@ public class HttpTest : MonoBehaviour
         Test();
     }
 
-    struct LoginSendData
+    class LoginSendData
     {
         public string channel;
         public string account;
@@ -31,7 +31,7 @@ public class HttpTest : MonoBehaviour
         public LoginRecvUserData data;
     }
 
-    async void Test()
+    async UniTaskVoid Test()
     {
         // {
         //     // Test Get
@@ -47,13 +47,13 @@ public class HttpTest : MonoBehaviour
 
         {
             // Test Post
-            var result = await Request.Instance.AsyncPostForm<LoginSendData, LoginRecvData>("http://192.168.1.180:7001/login", new LoginSendData
+            var result = await Request.Instance.AsyncPostJSON("http://192.168.1.213:8112/player/login", new LoginSendData
             {
                 channel = "test",
-                account = "123456",
+                account = "user001",
                 password = "123456",
             });
-            Log.D(JsonConvert.SerializeObject(result));
+            Log.D(result);
         }
     }
 }
