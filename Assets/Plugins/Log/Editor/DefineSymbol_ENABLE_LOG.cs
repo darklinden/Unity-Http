@@ -6,7 +6,7 @@ public static class DefineSymbol_ENABLE_LOG
 {
     public const string SYMBOL_NAME = "ENABLE_LOG";
 
-    public const string MENU_TITLE = "Tools/Define Symbol/" + SYMBOL_NAME;
+    public const string MENU_TITLE = "Tools/Define Symbol/Debug/" + SYMBOL_NAME;
 
     [MenuItem(MENU_TITLE, false, 1024)]
     static void DefineSymbolCheckMenu()

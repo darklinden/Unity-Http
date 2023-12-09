@@ -5,9 +5,10 @@ using Http;
 
 public class HttpTest : MonoBehaviour
 {
-    private void Start()
+    void Start()
     {
-        Test();
+        Log.D("HttpTest Start");
+        Test().Forget();
     }
 
     class LoginSendData
@@ -17,7 +18,7 @@ public class HttpTest : MonoBehaviour
         public string password;
     }
 
-    struct LoginRecvUserData
+    class LoginRecvUserData
     {
         public string id;
         public string account;
@@ -25,29 +26,64 @@ public class HttpTest : MonoBehaviour
         public string timestamp;
     }
 
-    struct LoginRecvData
+    class LoginRecvData
     {
         public int code;
         public LoginRecvUserData data;
     }
 
-    async UniTaskVoid Test()
+    async UniTask Test()
     {
-        // {
-        //     // Test Get
-        //     var result = await Request.Instance.AsyncGet<string>("http://127.0.0.1:8080/info.txt");
-        //     Log.D(result);
-        // }
-
-        // {
-        //     // Test Post
-        //     var result = await Request.Instance.AsyncPost<string, string>("http://127.0.0.1:8080", "hello");
-        //     Log.D(result);
-        // }
+        Log.D("Test Start");
+        var request = Request.Create();
 
         {
+            Log.D("Test Get");
             // Test Post
-            var result = await Request.Instance.AsyncPostJSON("http://192.168.1.213:8112/player/login", new LoginSendData
+            var result = await request.AsyncJsonGet<LoginRecvData>("https://baidu.com", new LoginSendData
+            {
+                channel = "test",
+                account = "user001",
+                password = "123456",
+            });
+            Log.D(result);
+        }
+
+        await UniTask.Delay(1000);
+
+        {
+            Log.D("Test Get");
+            // Test Post
+            var result = await request.AsyncJsonGet<LoginRecvData>("https://bing.com", new LoginSendData
+            {
+                channel = "test",
+                account = "user001",
+                password = "123456",
+            });
+            Log.D(result);
+        }
+
+        await UniTask.Delay(1000);
+
+        {
+            Log.D("Test Post");
+            // Test Post
+            var result = await request.AsyncJsonPost<LoginSendData, LoginRecvData>("https://baidu.com", new LoginSendData
+            {
+                channel = "test",
+                account = "user001",
+                password = "123456",
+            });
+            Log.D(result);
+        }
+
+
+        await UniTask.Delay(1000);
+
+        {
+            Log.D("Test Post");
+            // Test Post
+            var result = await request.AsyncJsonPost<LoginSendData, LoginRecvData>("https://bing.com", new LoginSendData
             {
                 channel = "test",
                 account = "user001",

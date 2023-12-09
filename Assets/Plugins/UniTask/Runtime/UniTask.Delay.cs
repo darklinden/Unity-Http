@@ -24,7 +24,7 @@ namespace Cysharp.Threading.Tasks
         public static YieldAwaitable Yield()
         {
             // optimized for single continuation
-            return new YieldAwaitable(PlayerLoopTiming.Update);
+            return new YieldAwaitable(PlayerLoopTiming.TimeUpdate);
         }
 
         public static YieldAwaitable Yield(PlayerLoopTiming timing)
@@ -123,6 +123,10 @@ namespace Cysharp.Threading.Tasks
 
         public static UniTask Delay(int millisecondsDelay, bool ignoreTimeScale = false, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (millisecondsDelay <= 0)
+            {
+                return Yield(cancellationToken);
+            }
             var delayTimeSpan = TimeSpan.FromMilliseconds(millisecondsDelay);
             return Delay(delayTimeSpan, ignoreTimeScale, delayTiming, cancellationToken);
         }
@@ -135,6 +139,10 @@ namespace Cysharp.Threading.Tasks
 
         public static UniTask Delay(int millisecondsDelay, DelayType delayType, PlayerLoopTiming delayTiming = PlayerLoopTiming.Update, CancellationToken cancellationToken = default(CancellationToken))
         {
+            if (millisecondsDelay <= 0)
+            {
+                return Yield(cancellationToken);
+            }
             var delayTimeSpan = TimeSpan.FromMilliseconds(millisecondsDelay);
             return Delay(delayTimeSpan, delayType, delayTiming, cancellationToken);
         }

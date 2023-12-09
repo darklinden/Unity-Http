@@ -252,7 +252,7 @@ namespace Cysharp.Threading.Tasks
 
                     WARN:
                     // WaitForEndOfFrame, WaitForFixedUpdate, others.
-                    UnityEngine.Debug.LogWarning($"yield {current.GetType().Name} is not supported on await IEnumerator or IEnumerator.ToUniTask(), please use ToUniTask(MonoBehaviour coroutineRunner) instead.");
+                    Log.W($"yield {current.GetType().Name} is not supported on await IEnumerator or IEnumerator.ToUniTask(), please use ToUniTask(MonoBehaviour coroutineRunner) instead.");
                     yield return null;
                 }
             }

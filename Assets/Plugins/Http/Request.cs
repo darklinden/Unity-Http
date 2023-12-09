@@ -1,52 +1,41 @@
-using System.Text;
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-
 using UnityEngine;
-using UnityEngine.Networking;
-using System.Threading.Tasks;
 using Cysharp.Threading.Tasks;
+using System.Threading;
 
 namespace Http
 {
-    public class Request : MonoBehaviour
+    public partial class Request : IDisposable
     {
-        private static Request _instance;
-        public static Request Instance
+        private static int sm_uniqueId = 0;
+        private static int GetUniqueId()
         {
-            get
+            if (sm_uniqueId >= int.MaxValue - 10)
             {
-                if (_instance == null)
-                {
-                    var go = new GameObject("[Http-Request]");
-                    _instance = go.AddComponent<Request>();
-                }
-                return _instance;
+                sm_uniqueId = 0;
             }
+            return ++sm_uniqueId;
         }
 
-        private readonly Dictionary<string, GameObject> _senders;
-        private Request()
+        public static Request Create()
         {
-            _senders = new Dictionary<string, GameObject>();
+            var request = new Request(); // AnyPool<Request>.Get();
+            request.Id = GetUniqueId();
+            sm_requests.Add(request.Id, request);
+            return request;
         }
 
-        private StringBuilder m_StringBuilder = null;
-        internal StringBuilder StringBuilder
+        public virtual void Dispose()
         {
-            get
-            {
-                if (m_StringBuilder == null)
-                {
-                    m_StringBuilder = new StringBuilder();
-                }
-                m_StringBuilder.Remove(0, m_StringBuilder.Length);
-                return m_StringBuilder;
-            }
+            sm_requests.Remove(Id);
+            Clear();
+            // AnyPool<Request>.Release(this);
         }
+
+        private static Dictionary<int, Request> sm_requests = new Dictionary<int, Request>(16);
+        public int Id { get; private set; }
+        public bool IsRunning { get; private set; }
 
         internal string NormalizeUrl(string url)
         {
@@ -57,12 +46,41 @@ namespace Http
             return "http://" + url;
         }
 
-        public static void Clear(string guid)
+        CancellationTokenSource cts = null;
+        public string Error { get; private set; }
+        public object Result { get; private set; }
+
+        public void Clear()
         {
-            GameObject go = null;
-            if (!Instance._senders.TryGetValue(guid, out go)) return;
-            UnityEngine.Object.Destroy(go.gameObject);
-            Instance._senders.Remove(guid);
+            IsRunning = false;
+            if (cts != null)
+            {
+                cts.Cancel();
+                cts.Dispose();
+                cts = null;
+            }
+            if (Error != null)
+            {
+                Error = null;
+            }
+            if (Result != null)
+            {
+                if (Result is IDisposable)
+                {
+                    (Result as IDisposable).Dispose();
+                }
+                Result = null;
+            }
+        }
+
+        public void Cancel()
+        {
+            if (cts != null)
+            {
+                cts.Cancel();
+                cts.Dispose();
+                cts = null;
+            }
         }
     }
 }

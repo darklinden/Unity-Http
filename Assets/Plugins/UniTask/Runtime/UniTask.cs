@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 
 namespace Cysharp.Threading.Tasks
 {
@@ -118,7 +119,7 @@ namespace Cysharp.Threading.Tasks
                 this.source.GetResult(this.token);
                 return CompletedTasks.AsyncUnit;
             }
-            else if(this.source is IUniTaskSource<AsyncUnit> asyncUnitSource)
+            else if (this.source is IUniTaskSource<AsyncUnit> asyncUnitSource)
             {
                 return new UniTask<AsyncUnit>(asyncUnitSource, this.token);
             }

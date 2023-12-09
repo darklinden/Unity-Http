@@ -27,7 +27,7 @@ namespace Cysharp.Threading.Tasks
         void LogError(Exception ex)
         {
 #if UNITY_2018_3_OR_NEWER
-            UnityEngine.Debug.LogException(ex);
+            Log.E(ex);
 #else
             Console.WriteLine(ex);
 #endif

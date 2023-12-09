@@ -1,14 +1,38 @@
 using System;
 using System.Text;
-using SimpleJSON;
 
 namespace Http
 {
     public static class Utils
     {
+        private static StringBuilder m_CachedSB = null;
+        internal static StringBuilder CachedSB
+        {
+            get
+            {
+                if (m_CachedSB == null)
+                {
+                    m_CachedSB = new StringBuilder();
+                }
+                m_CachedSB.Clear();
+                return m_CachedSB;
+            }
+        }
+
+        public static byte[] Str2Utf8(string string_)
+        {
+            if (string.IsNullOrEmpty(string_))
+            {
+                return new byte[] { 0x00 };
+            }
+
+            var tmp = Encoding.UTF8.GetBytes(string_);
+            return tmp;
+        }
+
         internal static string StructValuesToFormStr(object obj)
         {
-            var sb = new StringBuilder();
+            var sb = CachedSB;
             var type = obj.GetType();
             var fields = type.GetFields();
             foreach (var field in fields)
@@ -29,44 +53,7 @@ namespace Http
 
         internal static string StructValuesToJSON(object obj)
         {
-            var type = obj.GetType();
-            var fields = type.GetFields();
-            var jsonNode = new JSONObject();
-            foreach (var field in fields)
-            {
-                var value = field.GetValue(obj);
-                if (value == null)
-                {
-                    continue;
-                }
-                // assert value is string or number
-                switch (Type.GetTypeCode(value.GetType()))
-                {
-                    case TypeCode.Int16:
-                    case TypeCode.Int32:
-                    case TypeCode.UInt16:
-                    case TypeCode.UInt32:
-                        jsonNode[field.Name] = (int)value;
-                        break;
-                    case TypeCode.Int64:
-                    case TypeCode.UInt64:
-                        jsonNode[field.Name] = (long)value;
-                        break;
-                    case TypeCode.Single:
-                        jsonNode[field.Name] = (float)value;
-                        break;
-                    case TypeCode.Double:
-                        jsonNode[field.Name] = (double)value;
-                        break;
-                    case TypeCode.String:
-                        jsonNode[field.Name] = (string)value;
-                        break;
-                    default:
-                        Log.E("value type not supported: ", value, value.GetType().ToString());
-                        break;
-                }
-            }
-            return jsonNode.ToString();
+            return LitJson.JsonMapper.ToJson(obj);
         }
     }
 }

@@ -195,7 +195,7 @@ namespace Cysharp.Threading.Tasks.Internal
                 }
                 catch (Exception ex)
                 {
-                    UnityEngine.Debug.LogException(ex);
+                    Log.E(ex);
                 }
             }
 
